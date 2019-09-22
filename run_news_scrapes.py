@@ -10,6 +10,7 @@ in Dropbox.
 import sys
 import os
 import json
+import time
 
 import pandas as pd
 
@@ -51,6 +52,9 @@ def run_bing(settings):
             # Replace operation to translate quoted quotes from single (needed for json) to double (needed for bing API)
             # Yes, this is a stupid problem
             search_corpus = search_corpus + get_bing_items(term.replace("'", '"'), settings, filter_uk=False)
+            
+            # Pause two seconds to avoid surpassing the rate limit on the API
+            time.sleep(2)
         
         # Dump the corpus to file, record the date and time in the filename
         filename = settings['output_folder'] + "/bing_corpus_{}.json".format(datetime.now().strftime("%Y-%m-%d %H%M").replace(" ", "_"))
