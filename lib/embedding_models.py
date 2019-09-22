@@ -10,6 +10,7 @@ getting word/sentence embeddings using various pre-trained models.
 import torch
 import pickle
 import nltk
+import spacy
 
 import numpy as np
 
@@ -20,20 +21,17 @@ from nltk.corpus import stopwords
 # word2vec models and such copied to correct locations
 from lib.InferSent.models import InferSent
 
+# And spacy's parsing needs a trained model loaded in to it
+nlp = spacy.load('en_core_web_sm')
+
 
 class InferSentModel():
 	"""
-	Encapsulates the entire setup process and default configuration for
-	loading a pre-trained InferSent document embeddings model and
-	calculating the embeddings for a given corpus.
+	Encapsulates the entire setup process and default configuration for loading a pre-trained InferSent document
+    embeddings model and calculating the embeddings for a given corpus.
 	"""
-	
 	# For InferSent sentence level encoder
-	params_model = {'bsize': 64,
-					'word_emb_dim': 300,
-					'enc_lstm_dim': 2048,
-					'pool_type': 'max',
-					'dpout_model': 0.0}
+	params_model = {'bsize': 64, 'word_emb_dim': 300, 'enc_lstm_dim': 2048, 'pool_type': 'max', 'dpout_model': 0.0}
 	
 	def __init__(self,
 				 sentences,
@@ -84,14 +82,10 @@ class InferSentModel():
 
 class GloveWordModel():
 	"""
-	Encapsulates load and setup process for GloVE word embedding model
-	with summing of vectors over text.
+	Encapsulates load and setup process for GloVE word embedding model with summing of vectors over text.
 	"""
 	
-	def __init__(self,
-				 sentences,
-				 labels,
-				 MODEL_PATH = "./lib/Glove/glove.6B.50d.txt"):
+	def __init__(self, sentences, labels, MODEL_PATH = "./lib/Glove/glove.6B.50d.txt"):
 		
 		# Load the word-vector lookup table
 		self.word_embeddings = {}
@@ -153,6 +147,65 @@ class GloveWordModel():
 		if labels:
 			return {x[0]:x[1] for x in zip(new_labels, self.get_summed_word_vectors(new_sentences))}
 		else:
-			return self.model.encode(new_sentences, tokenize=True)
+			return self.model.encode(new_sentences, tokenize=True)    
 
 
+class NounAdjacencyModel():
+    """ Models of documents are one-hot-encoded named entity presence or absence. """
+    
+    def __init__(self, sentences, labels):
+        self.sentences = sentences
+        self.labels = labels
+        self.noun_sets = self.get_proper_nouns(self.sentences)
+        self.all_nouns = self.get_all_nouns()
+        self.entities = self.get_entities(self.noun_sets)
+        self.table = pd.DataFrame(data=self.entities, index=self.sentences, columns=self.all_nouns)
+    
+    
+    def get_proper_nouns(self, sentences):
+        """ Use spacy to get all of the actual entities """
+        results = []
+        for doc in sentences:
+            parsed = nlp(doc)
+            results.append(set([token.lemma_ for token in parsed if token.pos_ == 'PROPN']))
+    
+        return results
+    
+    
+    def get_all_nouns(self):
+        """ Get a set of all detected nouns. """
+        all_nouns = set()
+        for doc_set in self.noun_sets:
+            all_nouns = all_nouns.union(set(doc_set))
+            
+        return list(all_nouns)
+    
+    
+    def get_entities(self, noun_sets):
+        """ Create a table of the nouns' presence or absence in each document. """        
+        results = []
+        for doc in noun_sets:
+            results.append([int(x in doc) for x in self.all_nouns])
+        
+        return np.vstack(results)
+    
+    
+    def get_embeddings(self, labels=True):
+        """
+        Convenience function for getting the embeddings as an array or
+        with the labels.
+        """
+        if labels:
+            return {x[0]:x[1] for x in zip(self.labels, self.entities)}
+        else:
+            return self.entities
+    
+    
+    def get_more_embeddings(self, new_sentences, new_labels=None, labels=True):
+        """ Doesn't store vectors, merely returns them. """
+        doc_nouns = self.get_proper_nouns(new_sentences)
+        
+        if labels:
+            return {x[0]:x[1] for x in zip(new_labels, self.get_entities(doc_nouns))}
+        else:
+            return self.get_entities(doc_nouns) 

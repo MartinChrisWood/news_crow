@@ -38,7 +38,9 @@ def corpus_loader(directory, corpus_type, drop_raw=True):
     # Iterate through and load up every file in sequence
     compendium = pd.DataFrame()
     
+    print("Total files: {}".format(len(files)))
     for filename in files:
+        print("Loading file: {}".format(filename))
         with open(directory + "/" + filename, "r") as f:
             articles = json.load(f)
             for article in articles:
