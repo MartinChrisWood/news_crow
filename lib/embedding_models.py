@@ -13,6 +13,7 @@ import nltk
 import spacy
 
 import numpy as np
+import pandas as pd
 
 from gensim.models import Doc2Vec
 from nltk.corpus import stopwords
