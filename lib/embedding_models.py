@@ -17,6 +17,7 @@ import pandas as pd
 
 from gensim.models import Doc2Vec
 from nltk.corpus import stopwords
+from gensim.models.phrases import Phrases, Phraser
 
 # Local import, Requires local copy of InferSent model code with base
 # word2vec models and such copied to correct locations
@@ -157,7 +158,7 @@ class NounAdjacencyModel():
     def __init__(self, sentences, labels):
         self.sentences = sentences
         self.labels = labels
-        self.noun_sets = self.get_proper_nouns(self.sentences)
+        self.noun_sets = self.get_phrased_nouns(self.sentences)
         self.all_nouns = self.get_all_nouns()
         self.entities = self.get_entities(self.noun_sets)
         self.table = pd.DataFrame(data=self.entities, index=self.sentences, columns=self.all_nouns)
@@ -170,6 +171,25 @@ class NounAdjacencyModel():
             parsed = nlp(doc)
             results.append(set([token.lemma_ for token in parsed if token.pos_ == 'PROPN']))
     
+        return results
+    
+    def get_phrased_nouns(self, sentences):
+        """ Use spacy to get all of the actual entities, conjoin bigram nouns. """
+                
+        # Get the lists of nouns
+        noun_lists = []
+        for doc in sentences:
+            parsed = nlp(doc)
+            noun_lists.append([token.lemma_ for token in parsed if token.pos_ == 'PROPN'])
+            
+        # Build the phrase model
+        phrases = Phrases(noun_lists, min_count=5, threshold=0.5)
+        
+        # Get the set of phrases present in the model
+        results = []
+        for nouns in noun_lists:
+            results.append(set(phrases[nouns]))
+        
         return results
     
     
