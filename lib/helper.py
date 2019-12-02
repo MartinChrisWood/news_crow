@@ -25,28 +25,45 @@ def clean_text(article_text, brutal=False):
     return(article_text)
 
 
-def corpus_loader(directory, corpus_type, drop_raw=True):
+def corpus_loader(directory, corpus_tag, drop_raw=True):
     """ For loading my corpus files """
-    
+
     # Get a list of all corpus files
-    files = [x for x in os.listdir(directory) if x.endswith(".json") and ("corpus" in x) and (corpus_type in x)]
-    
+    files = [x for x in os.listdir(directory) if x.endswith(".json") and ("corpus" in x) and (corpus_tag in x)]
+
     # Implement filters here if I ever feel I need them
     # Filter by dates if needed
     #datetimestamps = [dt.strptime(":".join(re.findall(r"[0-9-]{1,}", x)), "%Y-%m-%d:%H%M")  for x in files]
-    
+
     # Iterate through and load up every file in sequence
-    compendium = pd.DataFrame()
-    
+    compendium = []
+
     print("Total files: {}".format(len(files)))
     for filename in files:
         print("Loading file: {}".format(filename))
         with open(directory + "/" + filename, "r") as f:
             articles = json.load(f)
             for article in articles:
-                
+
                 # Optional, don't bother loading up the original raw response (saves memory)
                 if drop_raw:
                     article.pop("raw")
-                compendium = compendium.append(article, ignore_index=True)
-    return compendium
+                compendium.append(article)
+
+    return pd.DataFrame(compendium)
+
+
+def load_clean_corpus(directory, corpus_tag, drop_raw=True, brutal=False):
+    """ All common pre-processing. """
+    corpus = corpus_loader(directory, corpus_tag, drop_raw=drop_raw)
+
+    # Filter to only the .uk vendors
+    corpus = corpus[corpus['link'].str.contains(".uk/")]
+
+    # Drop duplicates based on actual text
+    corpus = corpus.drop_duplicates("summary")
+
+    # Clean whatever's survived
+    corpus['clean_text'] = corpus[['title', 'summary']].apply(lambda x: clean_text('.  '.join(x)), axis=1)
+
+    return corpus
