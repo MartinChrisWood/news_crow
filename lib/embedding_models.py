@@ -199,7 +199,8 @@ class NounAdjacencyModel():
         
         # Build the phrase model
         phrases = Phrases(noun_dict.values(), min_count=5, threshold=0.5)
-
+        
+        print("Is this where ram useage goes off the charts?")
         # Get the set of phrases present in the model
         results = []
         for i in range(len(sentences)):
