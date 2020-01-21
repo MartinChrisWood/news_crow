@@ -163,16 +163,12 @@ class NounAdjacencyModel():
         self.sentences = sentences
         self.labels = labels
         self.noun_sets = self.get_phrased_nouns_parallel(self.sentences)
-        print("found all nouns")
         
         self.all_nouns = self.get_all_nouns()
-        print("Reduced noun lists to sets")
         
         self.entities = self.get_entities(self.noun_sets)
-        print("Created entity table")
         
         self.table = pd.DataFrame(data=self.entities, index=self.sentences, columns=self.all_nouns)
-        print("Aggregated result table")
 
 
     def get_proper_nouns(self, sentences):
@@ -187,7 +183,6 @@ class NounAdjacencyModel():
 
     def get_phrased_nouns_parallel(self, sentences):
         """ Use spacy to get all of the actual entities, conjoin bigram nouns. """
-        print("PARALLEL AWESOMENESS!!!")
         
         # I have to take some special measures to preserve ordering
         sent_tups = [(i, sentences[i]) for i in range(len(sentences))]
@@ -200,7 +195,6 @@ class NounAdjacencyModel():
         # Build the phrase model
         phrases = Phrases(noun_dict.values(), min_count=5, threshold=0.5)
         
-        print("Is this where ram useage goes off the charts?")
         # Get the set of phrases present in the model
         results = []
         for i in range(len(sentences)):
@@ -240,9 +234,7 @@ class NounAdjacencyModel():
 
     def get_entities(self, noun_sets):
         """ Create a table of the nouns' presence or absence in each document. """
-        
         results = []
-        
         for doc in noun_sets:
             results.append( np.asarray([int(x in doc) for x in self.all_nouns]) )
         

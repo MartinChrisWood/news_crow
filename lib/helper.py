@@ -1,7 +1,5 @@
 """
-
 Martin Wood - 14/07/2019
-
 For convenience; various functions that the experiment notebooks would be cleaner without
 """
 
@@ -37,10 +35,18 @@ def corpus_loader(directory, corpus_tag, drop_raw=True):
 
     # Iterate through and load up every file in sequence
     compendium = []
-
-    print("Total files: {}".format(len(files)))
+    
+    total = len(files)
+    print("Total files: {}".format(total))
+    
+    i = 0
     for filename in files:
-        print("Loading file: {}".format(filename))
+        
+        # Remark on progress
+        i += 1
+        if (i % (int(total / 10)) == 0):
+            print("%.1f of files read." % (100.0 * i / total))
+            
         with open(directory + "/" + filename, "r") as f:
             articles = json.load(f)
             for article in articles:
