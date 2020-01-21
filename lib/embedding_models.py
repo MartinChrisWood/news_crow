@@ -240,11 +240,13 @@ class NounAdjacencyModel():
 
     def get_entities(self, noun_sets):
         """ Create a table of the nouns' presence or absence in each document. """
+        
         results = []
+        
         for doc in noun_sets:
-            results.append([int(x in doc) for x in self.all_nouns])
-
-        return np.vstack(results)
+            results.append( np.asarray([int(x in doc) for x in self.all_nouns]) )
+        
+        return np.asarray(results)
 
 
     def get_embeddings(self, labels=True):
