@@ -1,1 +1,1 @@
-"C:\Users\Martin\Anaconda3\python.exe" "D:\Martin\Documents\GitHub\news_crow\run_news_scrapes.py" "C:/Users/Martin/Dropbox/news_crow/scrape_settings.json"
+"python" "C:\Users\marti\Documents\GitHub\news_crow\run_news_scrapes.py" "C:/Users/marti/Dropbox/news_crow/scrape_settings.json"
