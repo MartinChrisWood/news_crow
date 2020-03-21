@@ -35,18 +35,18 @@ def corpus_loader(directory, corpus_tag, drop_raw=True):
 
     # Iterate through and load up every file in sequence
     compendium = []
-    
+
     total = len(files)
     print("Total files: {}".format(total))
-    
+
     i = 0
     for filename in files:
-        
+
         # Remark on progress
         i += 1
         if (i % (int(total / 10)) == 0):
-            print("%.1f of files read." % (100.0 * i / total))
-            
+            print("%.1f percent of files read." % (100.0 * i / total))
+
         with open(directory + "/" + filename, "r") as f:
             articles = json.load(f)
             for article in articles:
