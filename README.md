@@ -1,11 +1,7 @@
-# News Crow - Collection of utilities for repeatedly collecting news items from RSS feeds and the bing news API
+# Just a collection of (ongoing) experiments
 
+## On clustering and summarizing news articles
 
-### Ideas To Try
+### Testing different ways of clustering (network vs embedding vs LDA)
 
-- Refine cliques method, try altering maximum-linkage limit to remove "overarching" topics?  Implement this instead of
-removing search terms from entities table
-- Apply PageRank to cliques results to identify most exclusive?
-- Try limiting the number of entities to the most common x (?) and see if that collapses the network into exclusive
-connected components
-
+#### Not easily reused by others

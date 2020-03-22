@@ -30,7 +30,7 @@ nlp = spacy.load('en_core_web_sm')
 # Useful func, return tuple of index and lemmatized proper nouns
 def pool_lambda(x):
 	return (x[0], [token.lemma_ for token in nlp(x[1]) if token.pos_ == 'PROPN'])
-        
+
 class InferSentModel():
     """
     Encapsulates the entire setup process and default configuration for loading a pre-trained InferSent document
@@ -89,6 +89,7 @@ class InferSentModel():
 class GloveWordModel():
     """
     Encapsulates load and setup process for GloVE word embedding model with summing of vectors over text.
+	TODO: extract length of embeddings programmatically from model path, use as class var
     """
 
     def __init__(self, sentences, labels, MODEL_PATH = "./lib/Glove/glove.6B.50d.txt"):
@@ -119,7 +120,7 @@ class GloveWordModel():
 
 
     def get_summed_word_vectors(self, sentences):
-        """ Creates summed word vectors for each sentence. """
+        """ Creates averaged word vectors for each sentence. """
         embeddings = []
 
         for s in sentences:
@@ -128,7 +129,7 @@ class GloveWordModel():
                 v = sum([self.word_embeddings.get(w, np.zeros((50,))) for w in cleaned.split()]) / ( len(cleaned.split()) + 0.001 )
 
             else:
-                v = np.zeros((100, 0))
+                v = np.zeros((50, 0))
             embeddings.append(v)
 
         return np.asarray(embeddings)
@@ -163,11 +164,11 @@ class NounAdjacencyModel():
         self.sentences = sentences
         self.labels = labels
         self.noun_sets = self.get_phrased_nouns_parallel(self.sentences)
-        
+
         self.all_nouns = self.get_all_nouns()
-        
+
         self.entities = self.get_entities(self.noun_sets)
-        
+
         self.table = pd.DataFrame(data=self.entities, index=self.sentences, columns=self.all_nouns)
 
 
@@ -183,29 +184,29 @@ class NounAdjacencyModel():
 
     def get_phrased_nouns_parallel(self, sentences):
         """ Use spacy to get all of the actual entities, conjoin bigram nouns. """
-        
+
         # I have to take some special measures to preserve ordering
         sent_tups = [(i, sentences[i]) for i in range(len(sentences))]
-        
+
         # Get the noun lists
         p = Pool()
         noun_tups = p.map(pool_lambda, sent_tups)
         noun_dict = {tup[0]: tup[1] for tup in noun_tups}
-        
+
         # Build the phrase model
         phrases = Phrases(noun_dict.values(), min_count=5, threshold=0.5)
-        
+
         # Get the set of phrases present in the model
         results = []
         for i in range(len(sentences)):
             results.append(set(phrases[noun_dict[i]]))
-        
+
         return results
 
 
     def get_phrased_nouns(self, sentences):
         """ Use spacy to get all of the actual entities, conjoin bigram nouns. """
-        
+
         # Get the lists of nouns
         noun_lists = []
         for doc in sentences:
@@ -221,7 +222,7 @@ class NounAdjacencyModel():
             results.append(set(phrases[nouns]))
 
         return results
-        
+
 
     def get_all_nouns(self):
         """ Get a set of all detected nouns. """
@@ -237,7 +238,7 @@ class NounAdjacencyModel():
         results = []
         for doc in noun_sets:
             results.append( np.asarray([int(x in doc) for x in self.all_nouns]) )
-        
+
         return np.asarray(results)
 
 
