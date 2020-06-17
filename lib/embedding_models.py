@@ -29,7 +29,8 @@ nlp = spacy.load('en_core_web_sm')
 
 # Useful func, return tuple of index and lemmatized proper nouns
 def pool_lambda(x):
-	return (x[0], [token.lemma_ for token in nlp(x[1]) if token.pos_ == 'PROPN'])
+    return (x[0], [token.lemma_ for token in nlp(x[1]) if token.pos_ == 'PROPN'])
+
 
 class InferSentModel():
     """
@@ -60,9 +61,7 @@ class InferSentModel():
         self.model.load_state_dict(torch.load(self.MODEL_PATH))
         self.model.set_w2v_path(self.W2V_PATH)
         self.model.build_vocab(sentences, tokenize=True)
-
         self.core_embeddings = self.model.encode(sentences, tokenize=True)
-
 
     def get_embeddings(self, labels=True):
         """
@@ -73,7 +72,6 @@ class InferSentModel():
             return {x[0]:x[1] for x in zip(self.labels, self.core_embeddings)}
         else:
             return self.core_embeddings
-
 
     def get_more_embeddings(self, new_sentences, new_labels=None, labels=True):
         """
@@ -89,10 +87,10 @@ class InferSentModel():
 class GloveWordModel():
     """
     Encapsulates load and setup process for GloVE word embedding model with summing of vectors over text.
-	TODO: extract length of embeddings programmatically from model path, use as class var
+    TODO: extract length of embeddings programmatically from model path, use as class var
     """
 
-    def __init__(self, sentences, labels, MODEL_PATH = "./lib/Glove/glove.6B.50d.txt"):
+    def __init__(self, sentences, labels, MODEL_PATH = "./lib/Glove/glove.6B.100d.txt"):
 
         # Load the word-vector lookup table
         self.word_embeddings = {}
@@ -108,7 +106,6 @@ class GloveWordModel():
 
         self.core_embeddings = self.get_summed_word_vectors(sentences)
 
-
     def clean_sentence(self, sentence, remove_stopwords=True):
         """ Utility, clean brutally. """
         sentence = sentence.replace('[^a-zA-Z]', ' ').lower()
@@ -118,7 +115,6 @@ class GloveWordModel():
 
         return sentence
 
-
     def get_summed_word_vectors(self, sentences):
         """ Creates averaged word vectors for each sentence. """
         embeddings = []
@@ -126,14 +122,13 @@ class GloveWordModel():
         for s in sentences:
             if len(s) != 0:
                 cleaned = self.clean_sentence(s)
-                v = sum([self.word_embeddings.get(w, np.zeros((50,))) for w in cleaned.split()]) / ( len(cleaned.split()) + 0.001 )
+                v = sum([self.word_embeddings.get(w, np.zeros((100,))) for w in cleaned.split()]) / ( len(cleaned.split()) + 0.001 )
 
             else:
-                v = np.zeros((50, 0))
+                v = np.zeros((100, 0))
             embeddings.append(v)
 
         return np.asarray(embeddings)
-
 
     def get_embeddings(self, labels=True):
         """
@@ -145,6 +140,78 @@ class GloveWordModel():
         else:
             return self.core_embeddings
 
+    def get_more_embeddings(self, new_sentences, new_labels=None, labels=True):
+        """
+        Get embeddings for sentences not in the original set. These are
+        not stored in the object, merely returned.
+        """
+        if labels:
+            return {x[0]:x[1] for x in zip(new_labels, self.get_summed_word_vectors(new_sentences))}
+        else:
+            return self.model.encode(new_sentences, tokenize=True)
+
+
+class NounGloveWordModel():
+    """
+    Encapsulates load and setup process for GloVE word embedding model with summing of vectors over text.
+    This version only bothers to create embeddings for nouns.
+    TODO: extract length of embeddings programmatically from model path, use as class var
+    """
+
+    def __init__(self, sentences, labels, MODEL_PATH = "./lib/Glove/glove.6B.100d.txt"):
+
+        # Load the word-vector lookup table
+        self.word_embeddings = {}
+        with open(MODEL_PATH, encoding="utf-8") as f:
+            for line in f:
+                values = line.split()
+                word = values[0]
+                coefs = np.asarray(values[1:], dtype='float32')
+                self.word_embeddings[word] = coefs
+
+        self.labels = labels
+        nltk.download('stopwords')
+
+        self.core_embeddings = self.get_summed_word_vectors(sentences)
+
+    def clean_sentence(self, sentence, remove_stopwords=True):
+        """ Utility, clean brutally. """
+        sentence = sentence.replace('[^a-zA-Z0-9.,]', ' ').lower()
+
+        if remove_stopwords:
+            sentence = " ".join([word for word in sentence.split() if word not in stopwords.words('english')])
+
+        return sentence
+
+    def get_proper_nouns(self, sentence):
+        """ Use spacy to get all of the actual entities """
+        return [token for token in nlp(sentence) if token.pos_ == 'PROPN']
+
+    def get_summed_word_vectors(self, sentences):
+        """ Creates averaged word vectors for each sentence. """
+        embeddings = []
+
+        for s in sentences:
+            if len(s) != 0:
+                cleaned = self.clean_sentence(s)
+                nouns = self.get_proper_nouns(cleaned)
+                v = sum([self.word_embeddings.get(w, np.zeros((100,))) for w in nouns]) / ( len(cleaned.split()) + 0.001 )
+
+            else:
+                v = np.zeros((100, 0))
+            embeddings.append(v)
+
+        return np.asarray(embeddings)
+
+    def get_embeddings(self, labels=True):
+        """
+        Convenience function for getting the embeddings as an array or
+        with the labels.
+        """
+        if labels:
+            return {x[0]:x[1] for x in zip(self.labels, self.core_embeddings)}
+        else:
+            return self.core_embeddings
 
     def get_more_embeddings(self, new_sentences, new_labels=None, labels=True):
         """
@@ -171,7 +238,6 @@ class NounAdjacencyModel():
 
         self.table = pd.DataFrame(data=self.entities, index=self.sentences, columns=self.all_nouns)
 
-
     def get_proper_nouns(self, sentences):
         """ Use spacy to get all of the actual entities """
         results = []
@@ -180,7 +246,6 @@ class NounAdjacencyModel():
             results.append(set([token.lemma_ for token in parsed if token.pos_ == 'PROPN']))
 
         return results
-
 
     def get_phrased_nouns_parallel(self, sentences):
         """ Use spacy to get all of the actual entities, conjoin bigram nouns. """
@@ -203,7 +268,6 @@ class NounAdjacencyModel():
 
         return results
 
-
     def get_phrased_nouns(self, sentences):
         """ Use spacy to get all of the actual entities, conjoin bigram nouns. """
 
@@ -223,7 +287,6 @@ class NounAdjacencyModel():
 
         return results
 
-
     def get_all_nouns(self):
         """ Get a set of all detected nouns. """
         all_nouns = set()
@@ -232,7 +295,6 @@ class NounAdjacencyModel():
 
         return list(all_nouns)
 
-
     def get_entities(self, noun_sets):
         """ Create a table of the nouns' presence or absence in each document. """
         results = []
@@ -240,7 +302,6 @@ class NounAdjacencyModel():
             results.append( np.asarray([int(x in doc) for x in self.all_nouns]) )
 
         return np.asarray(results)
-
 
     def get_embeddings(self, labels=True):
         """
@@ -251,7 +312,6 @@ class NounAdjacencyModel():
             return {x[0]:x[1] for x in zip(self.labels, self.entities)}
         else:
             return self.entities
-
 
     def get_more_embeddings(self, new_sentences, new_labels=None, labels=True):
         """
