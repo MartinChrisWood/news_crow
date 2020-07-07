@@ -74,6 +74,66 @@ def corpus_loader(directory, corpus_tag, drop_raw=True):
     return pd.DataFrame(compendium)
 
 
+def corpus_world_loader(directory, corpus_tag, drop_raw=True):
+    """
+    For loading my corpus files from RSS feeds specifically,
+    Filters those that are not from a world news site
+    """
+    # Firstly, load RSS feed list
+    feeds_df = pd.read_csv("D:/Dropbox/news_crow/rss_urls.csv")
+    
+    world_urls = list(feeds_df[feeds_df['type']=='world']['url'])
+    
+    # Get a list of all corpus files
+    files = [x for x in os.listdir(directory) if x.endswith(".json") and ("corpus" in x) and (corpus_tag in x)]
+
+    # Implement filters here if I ever feel I need them
+    # Filter by dates if needed
+    #datetimestamps = [dt.strptime(":".join(re.findall(r"[0-9-]{1,}", x)), "%Y-%m-%d:%H%M")  for x in files]
+
+    # Iterate through and load up every file in sequence
+    compendium = []
+
+    total = len(files)
+    print("Total files: {}".format(total))
+
+    i = 0
+    for filename in files:
+
+        # Remark on progress
+        i += 1
+        if (i % (int(total / 10)) == 0):
+            print("%.1f percent of files read." % (100.0 * i / total))
+
+        with open(directory + "/" + filename, "r") as f:
+            articles = json.load(f)
+            for article in articles:
+                if article['source_url'] in world_urls:
+                    # Optional, don't bother loading up the original raw response (saves memory)
+                    if drop_raw:
+                        article.pop("raw")
+                        
+                    compendium.append(article)
+                
+    return pd.DataFrame(compendium)
+
+
+def load_clean_world_corpus(directory, corpus_tag, drop_raw=True, brutal=False):
+    """ All common pre-processing. """
+    corpus = corpus_world_loader(directory, corpus_tag, drop_raw=drop_raw)
+
+    # Filter to only the .uk vendors
+    corpus = corpus[corpus['link'].str.contains(".uk/")]
+
+    # Drop duplicates based on actual text
+    corpus = corpus.drop_duplicates("summary")
+
+    # Clean whatever's survived
+    corpus['clean_text'] = corpus[['title', 'summary']].apply(lambda x: clean_text('.  '.join(x)), axis=1)
+
+    return corpus
+
+
 def load_clean_corpus(directory, corpus_tag, drop_raw=True, brutal=False):
     """ All common pre-processing. """
     corpus = corpus_loader(directory, corpus_tag, drop_raw=drop_raw)
@@ -175,7 +235,7 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
         
         fig.suptitle(data_path)
         # Diagnostic plots
-        temp = topic_features[topic_features['topic_labels'] != -1]
+        temp = topics_results['c_v'][topics_results['c_v']['topic_labels'] != -1]
         temp['topic_sizes'].hist(ax=axs[0], bins=30)
         temp['topic_coherence'].hist(ax=axs[1], bins=30)
         sns.scatterplot(x='topic_sizes', y='topic_coherence', data=temp, ax=axs[2])

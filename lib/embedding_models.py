@@ -14,6 +14,7 @@ import spacy
 
 import numpy as np
 import pandas as pd
+import time as tic
 
 from multiprocessing import Pool
 from gensim.models import Doc2Vec
@@ -90,7 +91,7 @@ class GloveWordModel():
     TODO: extract length of embeddings programmatically from model path, use as class var
     """
 
-    def __init__(self, sentences, labels, MODEL_PATH = "./lib/Glove/glove.6B.100d.txt"):
+    def __init__(self, sentences, labels, MODEL_PATH = "./lib/Glove/glove.6B.50d.txt"):
 
         # Load the word-vector lookup table
         self.word_embeddings = {}
@@ -121,11 +122,13 @@ class GloveWordModel():
 
         for s in sentences:
             if len(s) != 0:
+                #print("made it to loop")
+                #tic.sleep(3)
                 cleaned = self.clean_sentence(s)
-                v = sum([self.word_embeddings.get(w, np.zeros((100,))) for w in cleaned.split()]) / ( len(cleaned.split()) + 0.001 )
+                v = sum([self.word_embeddings.get(w, np.zeros((50,))) for w in cleaned.split()]) / ( len(cleaned.split()) + 0.001 )
 
             else:
-                v = np.zeros((100, 0))
+                v = np.zeros((50, 0))
             embeddings.append(v)
 
         return np.asarray(embeddings)
