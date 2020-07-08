@@ -33,6 +33,7 @@ def clean_text(article_text, brutal=False):
     article_text = re.sub(r'<b>|</b>|[&#39]', '', article_text)     # Remove annoying tags
     article_text = re.sub(r'\[[0-9]*\]', ' ', article_text)         # Gets rid of numbers
     article_text = re.sub(r'\s+', ' ', article_text)                # Replaces all forms of white space with single space
+    article_text = re.sub(r'apos;', '', article_text)               # Stupid apostrophe marker, I don't know how I ended up saving that
     if brutal:                                                      # Optional, all non alpha-numeric characters removed
         article_text = re.sub('r[^0-9A-Za-z ]', "", article_text)
     return(article_text)
@@ -247,8 +248,8 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
     df['doc_size'] = df['clean_text'].apply(lambda x: len(x.split()))
     print("Average document word count: {}".format(np.mean(df['doc_size'])))
     print("Number of documents: {}".format(df.shape[0]))
-    print("Latest record: {}".format(max(df['date'])))
-    print("Earliest record: {}".format(min(df['date'])))
+    print("Latest record: {}".format(min(df['date'])))
+    print("Earliest record: {}".format(max(df['date'])))
     print("Number of clusters: {}".format(len(pd.unique(df['cluster']))))
     print("Median cluster size: {}".format(np.median(topic_features['topic_sizes'])))
     print("Clustered docs: {}%".format(round(100.0 * sum(df[cluster_column] != -1) / df.shape[0], 1)))

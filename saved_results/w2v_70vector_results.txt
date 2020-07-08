@@ -1,0 +1,111 @@
+ testing min_samples:  1
+Percent outlier:  59.39859204281209
+Number of clusters:  995
+Largest 5 clusters:  [(-1, 18647), (848, 886), (51, 214), (922, 146), (269, 125)]
+Median cluster size:  8
+Mean cluster size:  31.55075376884422
+Percent 'really' clustered : 37.77912273436753
+
+ testing min_samples:  2
+Percent outlier:  65.39992992068295
+Number of clusters:  760
+Largest 5 clusters:  [(-1, 20531), (671, 883), (50, 214), (470, 193), (238, 135)]
+Median cluster size:  8
+Mean cluster size:  41.30657894736842
+Percent 'really' clustered : 31.787341127002836
+
+ testing min_samples:  3
+Percent outlier:  67.02768133023285
+Number of clusters:  591
+Largest 5 clusters:  [(-1, 21042), (584, 1211), (548, 889), (500, 360), (50, 214)]
+Median cluster size:  8
+Mean cluster size:  53.11844331641286
+Percent 'really' clustered : 29.114770808779028
+
+ testing min_samples:  4
+Percent outlier:  70.15258178574841
+Number of clusters:  503
+Largest 5 clusters:  [(-1, 22023), (478, 886), (498, 614), (496, 358), (431, 356)]
+Median cluster size:  9
+Mean cluster size:  62.411530815109344
+Percent 'really' clustered : 27.02513299143121
+
+ testing min_samples:  5
+Percent outlier:  73.54505781543656
+Number of clusters:  404
+Largest 5 clusters:  [(-1, 23088), (367, 892), (394, 582), (42, 214), (251, 207)]
+Median cluster size:  11
+Mean cluster size:  77.70544554455445
+Percent 'really' clustered : 23.613544420730737
+
+ testing min_samples:  6
+Percent outlier:  75.5072786927022
+Number of clusters:  354
+Largest 5 clusters:  [(-1, 23704), (331, 885), (349, 549), (38, 214), (226, 181)]
+Median cluster size:  11
+Mean cluster size:  88.68079096045197
+Percent 'really' clustered : 21.673621507979487
+
+ testing min_samples:  7
+Percent outlier:  62.49482368680916
+Number of clusters:  290
+Largest 5 clusters:  [(-1, 19619), (285, 5952), (279, 886), (32, 215), (189, 158)]
+Median cluster size:  11
+Mean cluster size:  108.25172413793103
+Percent 'really' clustered : 18.545535628961872
+
+ testing min_samples:  8
+Percent outlier:  62.06797693753384
+Number of clusters:  241
+Largest 5 clusters:  [(-1, 19485), (239, 6199), (238, 887), (32, 218), (154, 183)]
+Median cluster size:  12
+Mean cluster size:  130.26141078838174
+Percent 'really' clustered : 18.1855827732297
+
+ testing min_samples:  9
+Percent outlier:  63.625649030038545
+Number of clusters:  233
+Largest 5 clusters:  [(-1, 19974), (231, 6028), (230, 886), (27, 215), (140, 202)]
+Median cluster size:  11
+Mean cluster size:  134.73390557939913
+Percent 'really' clustered : 17.17261809957634
+
+ testing min_samples:  10
+Percent outlier:  65.21198993406173
+Number of clusters:  213
+Largest 5 clusters:  [(-1, 20472), (211, 5883), (210, 887), (31, 215), (130, 166)]
+Median cluster size:  12
+Mean cluster size:  147.3849765258216
+Percent 'really' clustered : 16.048163603351064
+
+ testing min_samples:  11
+Percent outlier:  68.00879176886568
+Number of clusters:  204
+Largest 5 clusters:  [(-1, 21350), (202, 4883), (200, 887), (179, 446), (32, 218)]
+Median cluster size:  11
+Mean cluster size:  153.88725490196077
+Percent 'really' clustered : 16.436785270601728
+
+ testing min_samples:  12
+Percent outlier:  66.25680884273564
+Number of clusters:  192
+Largest 5 clusters:  [(-1, 20800), (190, 5563), (189, 888), (167, 481), (30, 220)]
+Median cluster size:  11
+Mean cluster size:  163.50520833333334
+Percent 'really' clustered : 16.022680215334628
+
+ testing min_samples:  13
+Percent outlier:  72.1816965565572
+Number of clusters:  176
+Largest 5 clusters:  [(-1, 22660), (170, 3669), (168, 889), (147, 478), (25, 219)]
+Median cluster size:  12
+Mean cluster size:  178.3693181818182
+Percent 'really' clustered : 16.130984614404486
+
+ testing min_samples:  14
+Percent outlier:  67.45771350301023
+Number of clusters:  176
+Largest 5 clusters:  [(-1, 21177), (174, 5383), (173, 889), (151, 447), (26, 220)]
+Median cluster size:  9
+Mean cluster size:  178.3693181818182
+Percent 'really' clustered : 15.395151785429873

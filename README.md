@@ -10,16 +10,16 @@
 - Create an adjacency matrix based on co-occurence of nouns
 - Generate a graph from the adjacency matrix, documents become nodes, and non-directional edges exist where > 2 nouns in common are found
 
-For clustering, testing Label Propagation, finding maximally connected cliques, BigClam, and the Louvain community detection algorithm.  A complication with cliques and BigClam is that cliques/BigClam sets are not mutually exclusive - a document can be a member of multiple overlapping cliques.  This is natural for data like this, since many stories will be exploring the interactions of different entities (eg; the "prime minister" and "immigration") and genuinely reflects the corpus' subject matters.  Not sure how to evaluate overlapping clusters yet.
+For clustering, using the Louvain community detection algorithm.  For other algorithms, a complication with cliques and BigClam is that cliques/BigClam sets are not mutually exclusive - a document can be a member of multiple overlapping cliques.  This is natural for data like this, since many stories will be exploring the interactions of different entities (eg; the "prime minister" and "immigration") and genuinely reflects the corpus' subject matters.  Not sure how to evaluate overlapping clusters yet.
 
 
-### 02_topic_pipeline_HDBSCAN
+### 02_topic_pipeline_W2V
 
 Pre-processing will include dropping duplicate stories, removing stopwords and lemmatizing the remainder. Additionally, multi-word phrases will be detected and conjoined using Normalised Pointwise Mutual Information (NPMI).  A Continuous-Bag-Of-Words (CBOW) Word2Vec model will be trained on the corpus.  Minimum word count allowed will be set to 1, so that every word found in the training data will be found in the model vocabulary. Vectors are length 100.  Document representations will be created by element-wise averaging of their tokens' vectors.
 
 To create clusters to be treated as topics, the HDBSCAN algorithm will be applied to the document vectors.  Two approaches to applying it will be tried; clustering the vectors directly, and clustering the vectors after applying dimensionality reduction using PCA.
 
-The overall pipeline here has a lot of hyperparameters for both HDBSCAN and Word2Vec.
+Also attempting to use Kmeans clustering (of doc vectors and of PCA output) to see how the simpler algorithm compares.  The overall pipeline here has a lot of hyperparameters for both HDBSCAN and Word2Vec.
 
 
 ### 03_topic_pipeline_LDA
