@@ -261,15 +261,15 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
     
     print("\nBest Performant (C_v)!")
     for topic in top_topics:
-        print(df[df[cluster_column]==topic][text_column].head(4))
+        print(df[df[cluster_column]==topic][text_column].sample(4))
     
     print("\nWorst Performant (C_v)!")
     for topic in bot_topics:
-        print(df[df[cluster_column]==topic][text_column].head(4))
+        print(df[df[cluster_column]==topic][text_column].sample(4))
     
     print("\nMost Populated!")
     for topic in pop_topics:
-        print(df[df[cluster_column]==topic][text_column].head(4))
+        print(df[df[cluster_column]==topic][text_column].sample(4))
     
     return coherence_models, topics_results
     
