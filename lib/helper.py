@@ -173,6 +173,63 @@ def get_keyword_stats(df, search_term_path = "D:/Dropbox/news_crow/scrape_settin
     return(term_results)
     
 
+def time_coherence(df, cluster_id):
+    """
+    Calculate the average (mean) time gap between successive stories
+    Ignores NA's
+    Returns seconds
+    """
+    subset = df[df['cluster']==cluster_id].sort_values('date_clean')
+
+    subset['date_diff'] = (subset['date_clean'] - subset['date_clean'].shift()).astype('timedelta64[s]')
+
+    return sum(subset['date_diff'].dropna()) / len(subset['date_diff'].dropna())
+
+
+def macro_time_coherence(df):
+    """
+    Calculate macro-average time coherence for a corpus
+    """
+    
+    df['date_clean'] = pd.to_datetime(df['date'], errors='coerce', utc=True)
+    
+    cluster_ids = list(pd.unique(df['cluster']))
+    
+    cluster_ids.remove(-1)
+    
+    time_coherences = []
+    for cluster_id in cluster_ids:
+        try:
+            time_coherences.append(time_coherence(df, cluster_id))
+        except Exception as e:
+            print("Time coherence calculation failed on ", cluster_id)
+            print(e)
+    
+    return sum(time_coherences) / len(time_coherences)
+
+
+def micro_time_coherence(df):
+    """
+    Calculate macro-average time coherence for a corpus
+    """
+    
+    df['date_clean'] = pd.to_datetime(df['date'], errors='coerce', utc=True)
+    
+    cluster_ids = list(pd.unique(df['cluster']))
+    
+    cluster_ids.remove(-1)
+    
+    time_coherences = []
+    for cluster_id in cluster_ids:
+        try:
+            time_coherences.append(time_coherence(df, cluster_id) * (sum(df['cluster']==cluster_id) / len(df)))
+        except Exception as e:
+            print("Time coherence calculation failed on ", cluster_id)
+            print(e)
+    
+    return sum(time_coherences)
+
+
 def get_corpus_model_coherence(df, cluster_column="cluster"):
     """ 
     Encapsulates entire coherence model-building process for (flat) models
