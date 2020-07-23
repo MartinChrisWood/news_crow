@@ -32,6 +32,8 @@ nlp = spacy.load('en_core_web_sm')
 def pool_lambda(x):
     return (x[0], [token.lemma_ for token in nlp(x[1]) if token.pos_ == 'PROPN'])
 
+import lib.helper as helper
+
 
 class InferSentModel():
     """
@@ -298,6 +300,57 @@ class NounAdjacencyModel():
 
         return list(all_nouns)
 
+    def get_entities(self, noun_sets):
+        """ Create a table of the nouns' presence or absence in each document. """
+        results = []
+        for doc in noun_sets:
+            results.append( np.asarray([int(x in doc) for x in self.all_nouns]) )
+
+        return np.asarray(results)
+
+    def get_embeddings(self, labels=True):
+        """
+        Convenience function for getting the embeddings as an array or
+        with the labels.
+        """
+        if labels:
+            return {x[0]:x[1] for x in zip(self.labels, self.entities)}
+        else:
+            return self.entities
+
+    def get_more_embeddings(self, new_sentences, new_labels=None, labels=True):
+        """
+        Doesn't store vectors, merely returns them.
+        BUG - I NEED TO STORE AND QUERY THE PHRASES MODEL
+        """
+        doc_nouns = self.get_proper_nouns(new_sentences)
+
+        if labels:
+            return {x[0]:x[1] for x in zip(new_labels, self.get_entities(doc_nouns))}
+        else:
+            return self.get_entities(doc_nouns)
+
+        
+class NounAdjacencyModel2():
+    """ Models of documents are one-hot-encoded named entity presence or absence. """
+
+    def __init__(self, sentences, labels):
+        self.sentences = sentences
+        self.labels = labels
+        self.noun_sets = [set(x) for x in helper.get_phrased_nouns(self.sentences)]
+        self.all_nouns = self.get_all_nouns()
+        self.entities = self.get_entities(self.noun_sets)
+
+        self.table = pd.DataFrame(data=self.entities, index=self.sentences, columns=self.all_nouns)
+        
+    def get_all_nouns(self):
+        """ Get a set of all detected nouns. """
+        all_nouns = set()
+        for doc_set in self.noun_sets:
+            all_nouns = all_nouns.union(set(doc_set))
+
+        return list(all_nouns)
+    
     def get_entities(self, noun_sets):
         """ Create a table of the nouns' presence or absence in each document. """
         results = []

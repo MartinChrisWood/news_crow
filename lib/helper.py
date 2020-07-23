@@ -18,22 +18,36 @@ from datetime import datetime as dt
 from gensim.models.coherencemodel import CoherenceModel
 from gensim.utils import simple_preprocess
 from gensim.parsing.preprocessing import STOPWORDS
+from gensim.models.phrases import Phrases, Phraser
 
 from nltk.stem.porter import *
 
 # Define which stemmer to use in the pipeline later
 stemmer = PorterStemmer()
 
+# Spacy is used for POS tagging, because it has awesome neural network shizzle
+import spacy
+nlp = spacy.load('en_core_web_sm')
+
 # Useful flatten function from Alex Martelli on https://stackoverflow.com/questions/952914/how-to-make-a-flat-list-out-of-list-of-lists
 flatten = lambda l: [item for sublist in l for item in sublist]
 
 
 def clean_text(article_text, brutal=False):
-    """ Utility function for cleaning up text for me.  There's probably better ways to prepare data. """
+    """
+    Utility function for cleaning up text for me.
+    There's probably better ways to prepare data.
+    I have a rapidly growing pile of annoying exceptions here,
+    should probably go learn about text encodings!
+    """
     article_text = re.sub(r'<b>|</b>|[&#39]', '', article_text)     # Remove annoying tags
     article_text = re.sub(r'\[[0-9]*\]', ' ', article_text)         # Gets rid of numbers
     article_text = re.sub(r'\s+', ' ', article_text)                # Replaces all forms of white space with single space
     article_text = re.sub(r'&apos;', '', article_text)              # Stupid apostrophe marker, I don't know how I ended up saving that
+    article_text = re.sub(r'apos;', '', article_text)              # Stupid apostrophe marker, I don't know how I ended up saving that
+    article_text = re.sub(r'8217;', '', article_text)               # Special char that slips through
+    article_text = re.sub(r'8220;', '', article_text)               # Special char that slips through
+    article_text = re.sub(r'8221;', '', article_text)               # Special char that slips through
     if brutal:                                                      # Optional, all non alpha-numeric characters removed
         article_text = re.sub('r[^0-9A-Za-z ]', "", article_text)
     return(article_text)
@@ -156,6 +170,31 @@ def preprocess_description(description):
     return( [stemmer.stem(token) for token in simple_preprocess(str(description)) if token not in STOPWORDS] )
 
 
+def get_phrased_nouns(sentences):
+    """ Use spacy to get all of the actual entities, conjoin bigram nouns. """
+
+    # Get the lists of nouns
+    noun_lists = []
+    for doc in sentences:
+        parsed = nlp(doc)
+        
+        # Reduce to words that are proper nouns
+        noun_string = " ".join([token.text for token in parsed if token.pos_ == 'PROPN'])
+        
+        # Apply cleaning and remove any strings left empty
+        noun_lists.append([x.strip() for x in preprocess_description(noun_string) if len(x.strip()) != 0])
+
+    # Build the phrase model
+    phrases = Phrases(noun_lists, min_count=5, threshold=0.5)
+
+    # Get the set of phrases present in the model
+    results = []
+    for nouns in noun_lists:
+        results.append(phrases[nouns])
+
+    return results
+
+
 def get_keyword_stats(df, search_term_path = "D:/Dropbox/news_crow/scrape_settings.json"):
     """Retrive the set of search terms used for Bing, sum stories that contain them """
     with open(search_term_path, "r") as f:
@@ -186,16 +225,18 @@ def time_coherence(df, cluster_id):
     return sum(subset['date_diff'].dropna()) / len(subset['date_diff'].dropna())
 
 
-def macro_time_coherence(df):
+def macro_time_coherence(df, cluster_column="cluster"):
     """
     Calculate macro-average time coherence for a corpus
     """
     
     df['date_clean'] = pd.to_datetime(df['date'], errors='coerce', utc=True)
     
-    cluster_ids = list(pd.unique(df['cluster']))
+    cluster_ids = list(pd.unique(df[cluster_column]))
     
-    cluster_ids.remove(-1)
+    # Don't bother with outliers
+    if -1 in cluster_ids:
+        cluster_ids.remove(-1)
     
     time_coherences = []
     for cluster_id in cluster_ids:
@@ -208,26 +249,55 @@ def macro_time_coherence(df):
     return sum(time_coherences) / len(time_coherences)
 
 
-def micro_time_coherence(df):
+def micro_time_coherence(df, cluster_column="cluster"):
     """
     Calculate macro-average time coherence for a corpus
     """
     
     df['date_clean'] = pd.to_datetime(df['date'], errors='coerce', utc=True)
     
-    cluster_ids = list(pd.unique(df['cluster']))
+    cluster_ids = list(pd.unique(df[cluster_column]))
     
-    cluster_ids.remove(-1)
+    # Don't bother with outliers
+    if -1 in cluster_ids:
+        cluster_ids.remove(-1)
     
     time_coherences = []
     for cluster_id in cluster_ids:
         try:
-            time_coherences.append(time_coherence(df, cluster_id) * (sum(df['cluster']==cluster_id) / len(df)))
+            time_coherences.append(time_coherence(df, cluster_id) * (sum(df[cluster_column]==cluster_id) / len(df)))
         except Exception as e:
             print("Time coherence calculation failed on ", cluster_id)
             print(e)
     
     return sum(time_coherences)
+
+
+def get_corpus_time_coherence(df, cluster_column="cluster"):
+    """
+    Returns information on how coherent a clustering solution for a corpus
+    is in time, as well as time coherence by topic.
+    Reporting units are seconds.
+    """
+    
+    # Get average corpus coherences
+    micro = micro_time_coherence(df, cluster_column=cluster_column)
+    macro = macro_time_coherence(df, cluster_column=cluster_column)
+    
+    # Get coherence by cluster
+    cluster_coherences = {}
+    cluster_sizes = {}
+    for cluster_id in list(pd.unique(df[cluster_column])):
+        cluster_coherences[cluster_id] = time_coherence(df, cluster_id)
+        cluster_sizes[cluster_id] = len(df[df[cluster_column]==cluster_id])
+        
+    tabulated = pd.DataFrame({"topic_labels": list(cluster_coherences.keys()),
+                              "time_coherence": list(cluster_coherences.values()),
+                              "topic_sizes": list(cluster_sizes.values())})
+    
+    return {"micro_time_coherence": micro,
+            "macro_time_coherence": macro,
+            "topic_features": tabulated}
 
 
 def get_corpus_model_coherence(df, cluster_column="cluster"):
@@ -279,7 +349,13 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
     
     coherence_models, topics_lengths = get_corpus_model_coherence(df, cluster_column=cluster_column)
     
+    
     topics_results = {}
+    
+    time_stats = get_corpus_time_coherence(df, cluster_column="cluster")
+    
+    topics_results['time'] = time_stats['topic_features']
+    
     if plots:
         for key in coherence_models.keys():
         
@@ -292,16 +368,22 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
         fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(15, 5))
         
         fig.suptitle(data_path)
+        
         # Diagnostic plots
         temp = topics_results['c_v'][topics_results['c_v']['topic_labels'] != -1]
-        temp['topic_sizes'].hist(ax=axs[0], bins=30)
+        time = topics_results['time'][topics_results['time']['topic_labels'] != -1]
+        #temp['topic_sizes'].hist(ax=axs[0], bins=30)
+        sns.scatterplot(x='topic_sizes', y='time_coherence', data=time, ax=axs[0])
         temp['topic_coherence'].hist(ax=axs[1], bins=30)
         sns.scatterplot(x='topic_sizes', y='topic_coherence', data=temp, ax=axs[2])
     
-    # Key stats
+    # Coherence stats
     for key in coherence_models.keys():
         print("{measure}: {score}".format(measure=key, score=round(coherence_models[key].get_coherence(), 4)))
-        
+    print("Time Coherence (macro): {score}".format(score=time_stats['macro_time_coherence']))
+    print("Time Coherence (micro): {score}".format(score=time_stats['micro_time_coherence']))
+    
+    # General stats
     df['doc_size'] = df['clean_text'].apply(lambda x: len(x.split()))
     print("Average document word count: {}".format(np.mean(df['doc_size'])))
     print("Number of documents: {}".format(df.shape[0]))
