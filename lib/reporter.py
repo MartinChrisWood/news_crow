@@ -5,45 +5,73 @@ Functions for reporting on the coherence of a corpus
 
 import re
 import gensim
+import spacy
 import random
 
 import numpy as np
 import pandas as pd
+import networkx as nx
 
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from collections import Counter
 from datetime import datetime as dt
 from gensim.models.coherencemodel import CoherenceModel
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 from lib.helper import flatten, preprocess_description
 
+nlp = spacy.load('en_core_web_sm')
 
-def text_rank_summary(df, cluster_id):
+
+def text_rank_summary(df, n_returns=5):
     """
     Take all documents in a cluster, extract most exemplary
-    TODO:  Decide returns format, import the models used
     """
-    subset = df[df['cluster']==cluster_id]
-    subset['sentences'] = subset['tokens'].apply(" ".join)
-    #[" ".join(x) for x in list(subset['tokens'])]
+    # Sanity check; any actual documents?
+    if len(df) == 0:
+        return None
+    
+    df['sentences'] = df['tokens'].apply(" ".join)
     
     # Find vectors for all sentences
     vectorizer = TfidfVectorizer(max_features=300)
-    vectors = vectorizer.fit_transform(subset['sentences'])
+    vectors = vectorizer.fit_transform(df['sentences'])
     
     # Get the cosine similarity between pairs of sentences
-    sim_mat = cosine_similarity(clean_sentence_vectors)
+    sim_mat = cosine_similarity(vectors)
     
     # Build the similarity graph
     sim_graph = nx.from_numpy_array(sim_mat)
     scores = nx.pagerank(sim_graph)
     
-    ranked_sentences = sorted(((scores[i], s) for i,s in enumerate(sentences)), reverse=True)
+    ranked_sentences = sorted(((scores[i], s) for i,s in enumerate(df['clean_text'])), reverse=True)
     
-    return None
+    return ranked_sentences[:n_returns]
+
+
+def entities_summary(df, n_returns=10):
+    """
+    Take all the entities in a cluster, extract most frequently named
+    """
+    def get_entities(doc):
+        return [ent for ent in nlp(doc).ents]
+    
+    document_entities = df['clean_text'].apply(get_entities)
+    
+    return Counter([entity for entity in [str(x) for x in flatten(document_entities)]]).most_common(n_returns)
     
 
+def get_cluster_summary(df):
+    """
+    Wrapper for reporting example text from a cluster
+    """
+    return {"examples": text_rank_summary(df),
+            "entities": entities_summary(df)}
+
+    
 def time_coherence(df, cluster_id):
     """
     Calculate the average (mean) time gap between successive stories
@@ -228,16 +256,15 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
     # Get four examples for each of four most coherent
     top_topics = random.choices(list(topics_results['c_v'].sort_values("topic_coherence", ascending=False)['topic_labels']), k=4)
     
-    stats["examples_best_performant"] = [list(df[df[cluster_column]==topic][text_column].sample(4)) for topic in top_topics]
+    stats["examples_best_performant"] = [get_cluster_summary(df[df[cluster_column]==x]) for x in top_topics]
     
     # Get four examples for each of four least coherent
     bot_topics = random.choices(list(topics_results['c_v'].sort_values("topic_coherence", ascending=True)['topic_labels']), k=4)
     
-    stats["examples_worst_performant"] = [list(df[df[cluster_column]==topic][text_column].sample(4)) for topic in bot_topics]
-    
+    stats["examples_worst_performant"] = [get_cluster_summary(df[df[cluster_column]==x]) for x in bot_topics]
     # Get four examples for each of four most coherent
     pop_topics = random.choices(list(topics_results['c_v'].sort_values("topic_sizes", ascending=False)['topic_labels']), k=4)
     
-    stats["examples_populous"] = [list(df[df[cluster_column]==topic][text_column].sample(4)) for topic in pop_topics]
+    stats["examples_populous"] = [get_cluster_summary(df[df[cluster_column]==x]) for x in pop_topics]
     
     return stats, coherence_models, topics_results
