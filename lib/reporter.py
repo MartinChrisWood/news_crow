@@ -25,6 +25,9 @@ from lib.helper import flatten, preprocess_description
 
 nlp = spacy.load('en_core_web_sm')
 
+# Switches off "setting on slice of dataframe" warning
+pd.set_option('mode.chained_assignment', None)
+
 
 def text_rank_summary(df, n_returns=5):
     """
@@ -230,10 +233,19 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
         
     temp = topics_results['c_v'][topics_results['c_v']['topic_labels'] != -1]
     time = topics_results['time'][topics_results['time']['topic_labels'] != -1]
-        
+    
+    # Time Coherence
     sns.scatterplot(x='topic_sizes', y='time_coherence', data=time, ax=axs[0])
+    axs[0].set_xlabel("N. Docs in Cluster")
+    axs[0].set_ylabel("Cluster Coherence in Time (s)")
+    
     temp['topic_coherence'].hist(ax=axs[1], bins=30)
+    axs[1].set_xlabel("Cluster Topic Coherence (Cv)")
+    axs[1].set_ylabel("Number of Clusters")
+    
     sns.scatterplot(x='topic_sizes', y='topic_coherence', data=temp, ax=axs[2])
+    axs[2].set_xlabel("N. Docs in Cluster")
+    axs[2].set_ylabel("Cluster Topic Coherence (Cv)")
     
     stats = {}
     
