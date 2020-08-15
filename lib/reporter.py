@@ -64,15 +64,28 @@ def entities_summary(df, n_returns=10):
     
     document_entities = df['clean_text'].apply(get_entities)
     
-    return Counter([entity for entity in [str(x) for x in flatten(document_entities)]]).most_common(n_returns)
+    return Counter([entity for entity in [str(x).upper() for x in flatten(document_entities)]]).most_common(n_returns)
     
-
+    
+def nouns_summary(df, n_returns=10):
+    """
+    Take all the entities in a cluster, extract most frequently named
+    """
+    def get_nouns(doc):
+        return [token.text for token in nlp(doc) if token.pos_ == 'PROPN']
+    
+    document_nouns = df['clean_text'].apply(get_nouns)
+    
+    return Counter([noun for noun in [str(x).upper() for x in flatten(document_nouns)]]).most_common(n_returns)
+    
+    
 def get_cluster_summary(df):
     """
     Wrapper for reporting example text from a cluster
     """
     return {"examples": text_rank_summary(df),
-            "entities": entities_summary(df)}
+            "entities": entities_summary(df),
+            "nouns": nouns_summary(df)}
 
     
 def time_coherence(df, cluster_id):
@@ -177,7 +190,9 @@ def get_corpus_model_coherence(df, cluster_column="cluster"):
     topics = {}
     topics_lengths = {}
     
-    for topic in pd.unique(df['cluster']):
+    topic_labels = [x for x in pd.unique(df['cluster']) if x != -1]
+    
+    for topic in topic_labels:
         subset = df[df['cluster'] == topic]
         topics_lengths[topic] = subset.shape[0]
         topics[topic] = flatten(list(subset['tokens']))
@@ -202,13 +217,18 @@ def get_corpus_model_coherence(df, cluster_column="cluster"):
     return(coherence_models, topics_lengths)
 
 
-def report_corpus_model_coherence(data_path, cluster_column="cluster", text_column="clean_text"):
+def report_corpus_model_coherence(data_path, cluster_column="cluster", text_column="clean_text", max_size=None):
     """
     Creates two key coherence models (C_v, NPMI) and reports coherences,
     plus coherence/topic distribution
     """
     df = pd.read_csv(data_path)
     df["tokens"] = df[text_column].apply(preprocess_description)
+    
+    # If cluster is larger than maximum limit, designate as outlier
+    if max_size:
+        cs_lookup = df[cluster_column].value_counts().to_dict()
+        df[cluster_column] = df[cluster_column].apply(lambda x: -1 if (cs_lookup[x] > max_size) else x)
     
     # Handles the coherence scoring
     coherence_models, topics_lengths = get_corpus_model_coherence(df, cluster_column=cluster_column)
@@ -266,17 +286,20 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
     stats["Percent clustered docs"] = round(100.0 * sum(df[cluster_column] != -1) / df.shape[0], 1)
     
     # Get four examples for each of four most coherent
-    top_topics = random.choices(list(topics_results['c_v'].sort_values("topic_coherence", ascending=False)['topic_labels']), k=4)
+    top_topics = list(topics_results['c_v'].sort_values("topic_coherence", ascending=False)['topic_labels'])[:4]
     
     stats["examples_best_performant"] = [get_cluster_summary(df[df[cluster_column]==x]) for x in top_topics]
     
     # Get four examples for each of four least coherent
-    bot_topics = random.choices(list(topics_results['c_v'].sort_values("topic_coherence", ascending=True)['topic_labels']), k=4)
+    bot_topics = list(topics_results['c_v'].sort_values("topic_coherence", ascending=True)['topic_labels'])[:4]
     
     stats["examples_worst_performant"] = [get_cluster_summary(df[df[cluster_column]==x]) for x in bot_topics]
-    # Get four examples for each of four most coherent
-    pop_topics = random.choices(list(topics_results['c_v'].sort_values("topic_sizes", ascending=False)['topic_labels']), k=4)
+    
+    # Get four examples for each of four most populous
+    pop_topics = list(topics_results['c_v'].sort_values("topic_sizes", ascending=False)['topic_labels'])[:4]
     
     stats["examples_populous"] = [get_cluster_summary(df[df[cluster_column]==x]) for x in pop_topics]
     
     return stats, coherence_models, topics_results
+
+
