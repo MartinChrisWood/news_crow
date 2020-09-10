@@ -167,7 +167,7 @@ def preprocess_description(description):
     return( [stemmer.stem(token) for token in simple_preprocess(str(description)) if token not in STOPWORDS] )
 
 
-def get_phrased_nouns(sentences):
+def get_phrased_nouns(sentences, pick_nouns=True):
     """ Use spacy to get all of the actual entities, conjoin bigram nouns. """
 
     # Get the lists of nouns
@@ -175,8 +175,11 @@ def get_phrased_nouns(sentences):
     for doc in sentences:
         parsed = nlp(doc)
         
-        # Reduce to words that are proper nouns
-        noun_string = " ".join([token.text for token in parsed if token.pos_ == 'PROPN'])
+        if pick_nouns:
+            # Reduce to words that are proper nouns
+            noun_string = " ".join([token.text for token in parsed if token.pos_ == 'PROPN'])
+        else:
+            noun_string = " ".join([token.text for token in parsed])
         
         # Apply cleaning and remove any strings left empty
         noun_lists.append([x.strip() for x in preprocess_description(noun_string) if len(x.strip()) != 0])
