@@ -36,18 +36,22 @@ def clean_text(article_text, brutal=False):
     I have a rapidly growing pile of annoying exceptions here,
     should probably go learn about text encodings!
     """
-    article_text = re.sub(r'<b>|</b>|[&#39]', '', article_text)     # Remove annoying tags
-    article_text = re.sub(r'\[[0-9]*\]', ' ', article_text)         # Gets rid of numbers
-    article_text = re.sub(r'\s+', ' ', article_text)                # Replaces all forms of white space with single space
-    article_text = re.sub(r'&apos;', '', article_text)              # Stupid apostrophe marker, I don't know how I ended up saving that
-    article_text = re.sub(r'apos;', '', article_text)               # Stupid apostrophe marker, I don't know how I ended up saving that
-    article_text = re.sub(r'8217;', '', article_text)               # Special char that slips through
-    article_text = re.sub(r'8220;', '', article_text)               # Special char that slips through
-    article_text = re.sub(r'8221;', '', article_text)               # Special char that slips through
-    article_text = re.sub(r'[820;]', '', article_text)              # Special char that slips through
     if brutal:                                                      # Optional, all non alpha-numeric characters removed
         article_text = re.sub('r[^0-9A-Za-z ]', "", article_text)
+    
+    else:
+        article_text = re.sub(r'<b>|</b>|[&#39]', '', article_text)     # Remove annoying tags
+        article_text = re.sub(r'\[[0-9]*\]', ' ', article_text)         # Gets rid of numbers
+        article_text = re.sub(r'\s+', ' ', article_text)                # Replaces all forms of white space with single space
+        article_text = re.sub(r'&apos;', '', article_text)              # Stupid apostrophe marker, I don't know how I ended up saving that
+        article_text = re.sub(r'apos;', '', article_text)               # Stupid apostrophe marker, I don't know how I ended up saving that
+        article_text = re.sub(r'8217;', '', article_text)               # Special char that slips through
+        article_text = re.sub(r'8220;', '', article_text)               # Special char that slips through
+        article_text = re.sub(r'8221;', '', article_text)               # Special char that slips through
+        article_text = re.sub(r'[820;]', '', article_text)              # Special char that slips through
+    
     return(article_text)
+    
 
 
 def corpus_loader(directory, corpus_tag, drop_raw=True):

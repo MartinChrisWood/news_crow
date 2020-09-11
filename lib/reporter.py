@@ -249,7 +249,9 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
         topics_results[key] = topic_features
         
     fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(15, 5))
-    fig.suptitle(data_path)
+    
+    # Get key info from the filepath and use as a title
+    fig.suptitle(data_path.split("/")[1].strip(".csv").upper().replace("_", " "))
         
     temp = topics_results['c_v'][topics_results['c_v']['topic_labels'] != -1]
     time = topics_results['time'][topics_results['time']['topic_labels'] != -1]
@@ -266,6 +268,8 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
     sns.scatterplot(x='topic_sizes', y='topic_coherence', data=temp, ax=axs[2])
     axs[2].set_xlabel("N. Docs in Cluster")
     axs[2].set_ylabel("Cluster Topic Coherence (Cv)")
+    
+    plt.savefig("outputs/" + data_path.split("/")[1].strip(".csv") + ".png")
     
     stats = {}
     
@@ -303,3 +307,13 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
     return stats, coherence_models, topics_results
 
 
+def format_examples(examples_dict, len_limit=4):
+    """
+    Utility for formatting examples from a cluster into the format that
+    LaTeX uses.
+    """
+    return pd.DataFrame({"TextRank Score": [x[0] for x in examples_dict['examples']][:len_limit],
+                         "Text": [x[1][:200] for x in examples_dict['examples']][:len_limit],
+                         "Entities": [x[0] for x in examples_dict['entities']][:len_limit],
+                         "Entities Count": [x[1] for x in examples_dict['entities']][:len_limit]})
+    
