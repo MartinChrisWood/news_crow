@@ -248,26 +248,26 @@ def report_corpus_model_coherence(data_path, cluster_column="cluster", text_colu
             
         topics_results[key] = topic_features
         
-    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(15, 5))
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
     
     # Get key info from the filepath and use as a title
-    fig.suptitle(data_path.split("/")[1].strip(".csv").upper().replace("_", " "))
+    #fig.suptitle(data_path.split("/")[1].strip(".csv").upper().replace("_", " "))
         
     temp = topics_results['c_v'][topics_results['c_v']['topic_labels'] != -1]
     time = topics_results['time'][topics_results['time']['topic_labels'] != -1]
     
     # Time Coherence
-    sns.scatterplot(x='topic_sizes', y='time_coherence', data=time, ax=axs[0])
-    axs[0].set_xlabel("N. Docs in Cluster")
-    axs[0].set_ylabel("Cluster Coherence in Time (s)")
+    #sns.scatterplot(x='topic_sizes', y='time_coherence', data=time, ax=axs[0])
+    #axs[0].set_xlabel("N. Docs in Cluster")
+    #axs[0].set_ylabel("Cluster Coherence in Time (s)")
     
-    temp['topic_coherence'].hist(ax=axs[1], bins=30)
-    axs[1].set_xlabel("Cluster Topic Coherence (Cv)")
-    axs[1].set_ylabel("Number of Clusters")
+    temp['topic_coherence'].hist(ax=axs[0], bins=30)
+    axs[0].set_xlabel("Cluster Topic Coherence (Cv)")
+    axs[0].set_ylabel("Number of Clusters")
     
-    sns.scatterplot(x='topic_sizes', y='topic_coherence', data=temp, ax=axs[2])
-    axs[2].set_xlabel("N. Docs in Cluster")
-    axs[2].set_ylabel("Cluster Topic Coherence (Cv)")
+    sns.scatterplot(x='topic_sizes', y='topic_coherence', data=temp, ax=axs[1])
+    axs[1].set_xlabel("N. Docs in Cluster")
+    axs[1].set_ylabel("Cluster Topic Coherence (Cv)")
     
     plt.savefig("outputs/" + data_path.split("/")[1].strip(".csv") + ".png")
     
@@ -313,7 +313,7 @@ def format_examples(examples_dict, len_limit=4):
     LaTeX uses.
     """
     return pd.DataFrame({"TextRank Score": [x[0] for x in examples_dict['examples']][:len_limit],
-                         "Text": [x[1][:200] for x in examples_dict['examples']][:len_limit],
+                         "Text": [x[1][:120] for x in examples_dict['examples']][:len_limit],
                          "Entities": [x[0] for x in examples_dict['entities']][:len_limit],
                          "Entities Count": [x[1] for x in examples_dict['entities']][:len_limit]})
     
